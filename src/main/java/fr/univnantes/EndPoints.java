@@ -69,7 +69,7 @@ public class EndPoints {
 		
 		//On ajoute tout les followers dans la liste de réception
 		for(Entity entry : results) {
-			rec.add(e.getProperty("follower").toString());
+			rec.add(entry.getProperty("follower").toString());
 		}
 		
 		pi.setProperty("receivers",rec);

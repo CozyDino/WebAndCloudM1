@@ -69,8 +69,8 @@ import fr.univnantes.PostMessage;
 		
 		//On ajoute tout les followers dans la liste de réception
 <span class="nc bnc" id="L71" title="All 2 branches missed.">		for(Entity entry : results) {</span>
-<span class="nc" id="L72">			rec.add(e.getProperty(&quot;follower&quot;).toString());</span>
-<span class="nc" id="L73">		}</span>
+<span class="nc" id="L72">			rec.add(entry.getProperty(&quot;follower&quot;).toString());</span>
+		}
 		
 <span class="nc" id="L75">		pi.setProperty(&quot;receivers&quot;,rec);</span>
 		
