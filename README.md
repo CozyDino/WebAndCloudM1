@@ -4,6 +4,7 @@
 Groupe : 
 Bouteiller Natanaël
 Manoé Kieffer
+Augustin Herve
 
 Télécharger gcloud : https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe?hl=fr
 
