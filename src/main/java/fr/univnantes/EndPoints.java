@@ -1,7 +1,12 @@
 package fr.univnantes;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.Api;
@@ -17,6 +22,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultList;
@@ -64,8 +70,10 @@ public class EndPoints {
 		e.setProperty("date", new Date());
 
 //		Solution pour pas projeter les listes
+		
 		Entity pi = new Entity("PostIndex", e.getKey());
 		HashSet<String> rec=new HashSet<String>();
+		
 		
 		//On ajoute tout les followers dans la liste de réception
 		for(Entity entry : results) {
@@ -93,23 +101,38 @@ public class EndPoints {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 
+			Query qIndex = new Query("PostIndex").setFilter(new FilterPredicate("receivers", FilterOperator.EQUAL, user.getEmail()));
+			qIndex.setKeysOnly();
 			
-			Query q = new Query("Post").
-			    setFilter(new FilterPredicate("owner", FilterOperator.EQUAL, user.getEmail()));
-			PreparedQuery pq = datastore.prepare(q);
-
-			
+			PreparedQuery pqIndex = datastore.prepare(qIndex);
 			
 			FetchOptions fetchOptions = FetchOptions.Builder.withLimit(2);
-
+			
 			if (cursorString != null) {
 				fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
 			}
+			
+			QueryResultList<Entity> resultIndex = pqIndex.asQueryResultList(fetchOptions);
+			
+			
+			ArrayList<Key> keys = new ArrayList<Key>();
+			
+			for(Entity entity : resultIndex) {
+				keys.add(entity.getParent());
+			}
+			
+			Map<Key, Entity> msgs = datastore.get(keys);
+			
+			Collection<Entity> coll = new LinkedList<Entity>();
+			
+			for(Entity e : msgs.values()) {
+				coll.add(e);
+			}
 
-			QueryResultList<Entity> results = pq.asQueryResultList(fetchOptions);
-			cursorString = results.getCursor().toWebSafeString();
+			
+			cursorString = resultIndex.getCursor().toWebSafeString();
 
-			return CollectionResponse.<Entity>builder().setItems(results).setNextPageToken(cursorString).build();
+			return CollectionResponse.<Entity>builder().setItems(coll).setNextPageToken(cursorString).build();
 		}
 	
 	

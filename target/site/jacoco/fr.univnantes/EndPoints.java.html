@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="fr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EndPoints.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">TinyInsta</a> &gt; <a href="index.source.html" class="el_package">fr.univnantes</a> &gt; <span class="el_source">EndPoints.java</span></div><h1>EndPoints.java</h1><pre class="source lang-java linenums">package fr.univnantes;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import com.google.api.server.spi.auth.common.User;
 import com.google.api.server.spi.config.Api;
@@ -17,6 +22,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultList;
@@ -39,46 +45,48 @@ import fr.univnantes.PostMessage;
   		   packagePath = &quot;&quot;)
 )
 
-<span class="nc" id="L42">public class EndPoints {</span>
+<span class="nc" id="L48">public class EndPoints {</span>
 	@ApiMethod(name = &quot;postMsg&quot;, httpMethod = HttpMethod.POST)
 	public Entity postMsg(User user, PostMessage pm) throws UnauthorizedException {
 
-<span class="nc bnc" id="L46" title="All 2 branches missed.">		if (user == null) {</span>
-<span class="nc" id="L47">			throw new UnauthorizedException(&quot;Invalid credentials&quot;);</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		if (user == null) {</span>
+<span class="nc" id="L53">			throw new UnauthorizedException(&quot;Invalid credentials&quot;);</span>
 		}
 		
 		
-<span class="nc" id="L51">		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
+<span class="nc" id="L57">		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
 		
 		
-<span class="nc" id="L54">		Query qFollowers = new Query(&quot;Follow&quot;). //TODO recupérer les receivers en piochant dans la table des follows</span>
-<span class="nc" id="L55">	    setFilter(new FilterPredicate(&quot;profile&quot;, FilterOperator.EQUAL, user.getEmail()));</span>
-<span class="nc" id="L56">		PreparedQuery pq = datastore.prepare(qFollowers);</span>
-<span class="nc" id="L57">		QueryResultIterable&lt;Entity&gt; results = pq.asQueryResultIterable();</span>
+<span class="nc" id="L60">		Query qFollowers = new Query(&quot;Follow&quot;). //TODO recupérer les receivers en piochant dans la table des follows</span>
+<span class="nc" id="L61">	    setFilter(new FilterPredicate(&quot;profile&quot;, FilterOperator.EQUAL, user.getEmail()));</span>
+<span class="nc" id="L62">		PreparedQuery pq = datastore.prepare(qFollowers);</span>
+<span class="nc" id="L63">		QueryResultIterable&lt;Entity&gt; results = pq.asQueryResultIterable();</span>
 
-<span class="nc" id="L59">		Entity e = new Entity(&quot;Post&quot;, Long.MAX_VALUE-(new Date()).getTime()+&quot;:&quot;+user.getEmail());</span>
-<span class="nc" id="L60">		e.setProperty(&quot;owner&quot;, user.getEmail());</span>
-<span class="nc" id="L61">		e.setProperty(&quot;url&quot;, pm.url);</span>
-<span class="nc" id="L62">		e.setProperty(&quot;body&quot;, pm.body);</span>
-<span class="nc" id="L63">		e.setProperty(&quot;likec&quot;, 0);</span>
-<span class="nc" id="L64">		e.setProperty(&quot;date&quot;, new Date());</span>
+<span class="nc" id="L65">		Entity e = new Entity(&quot;Post&quot;, Long.MAX_VALUE-(new Date()).getTime()+&quot;:&quot;+user.getEmail());</span>
+<span class="nc" id="L66">		e.setProperty(&quot;owner&quot;, user.getEmail());</span>
+<span class="nc" id="L67">		e.setProperty(&quot;url&quot;, pm.url);</span>
+<span class="nc" id="L68">		e.setProperty(&quot;body&quot;, pm.body);</span>
+<span class="nc" id="L69">		e.setProperty(&quot;likec&quot;, 0);</span>
+<span class="nc" id="L70">		e.setProperty(&quot;date&quot;, new Date());</span>
 
 //		Solution pour pas projeter les listes
-<span class="nc" id="L67">		Entity pi = new Entity(&quot;PostIndex&quot;, e.getKey());</span>
-<span class="nc" id="L68">		HashSet&lt;String&gt; rec=new HashSet&lt;String&gt;();</span>
+		
+<span class="nc" id="L74">		Entity pi = new Entity(&quot;PostIndex&quot;, e.getKey());</span>
+<span class="nc" id="L75">		HashSet&lt;String&gt; rec=new HashSet&lt;String&gt;();</span>
+		
 		
 		//On ajoute tout les followers dans la liste de réception
-<span class="nc bnc" id="L71" title="All 2 branches missed.">		for(Entity entry : results) {</span>
-<span class="nc" id="L72">			rec.add(entry.getProperty(&quot;follower&quot;).toString());</span>
-<span class="nc" id="L73">		}</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">		for(Entity entry : results) {</span>
+<span class="nc" id="L80">			rec.add(entry.getProperty(&quot;follower&quot;).toString());</span>
+		}
 		
-<span class="nc" id="L75">		pi.setProperty(&quot;receivers&quot;,rec);</span>
+<span class="nc" id="L83">		pi.setProperty(&quot;receivers&quot;,rec);</span>
 		
-<span class="nc" id="L77">		Transaction txn = datastore.beginTransaction();</span>
-<span class="nc" id="L78">		datastore.put(e);</span>
-<span class="nc" id="L79">		datastore.put(pi);</span>
-<span class="nc" id="L80">		txn.commit();</span>
-<span class="nc" id="L81">		return e;</span>
+<span class="nc" id="L85">		Transaction txn = datastore.beginTransaction();</span>
+<span class="nc" id="L86">		datastore.put(e);</span>
+<span class="nc" id="L87">		datastore.put(pi);</span>
+<span class="nc" id="L88">		txn.commit();</span>
+<span class="nc" id="L89">		return e;</span>
 	}
 	
 	//TODO récuperer liste de message pour l'utilisateur et pour ses amis, via receiver list ?
@@ -87,47 +95,62 @@ import fr.univnantes.PostMessage;
 		public CollectionResponse&lt;Entity&gt; getPost(User user, @Nullable @Named(&quot;next&quot;) String cursorString)
 				throws UnauthorizedException {
 
-<span class="nc bnc" id="L90" title="All 2 branches missed.">			if (user == null) {</span>
-<span class="nc" id="L91">				throw new UnauthorizedException(&quot;Invalid credentials&quot;);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">			if (user == null) {</span>
+<span class="nc" id="L99">				throw new UnauthorizedException(&quot;Invalid credentials&quot;);</span>
 			}
 
-<span class="nc" id="L94">			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
+<span class="nc" id="L102">			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
 
+<span class="nc" id="L104">			Query qIndex = new Query(&quot;PostIndex&quot;).setFilter(new FilterPredicate(&quot;receivers&quot;, FilterOperator.EQUAL, user.getEmail()));</span>
+<span class="nc" id="L105">			qIndex.setKeysOnly();</span>
 			
-<span class="nc" id="L97">			Query q = new Query(&quot;Post&quot;).</span>
-<span class="nc" id="L98">			    setFilter(new FilterPredicate(&quot;owner&quot;, FilterOperator.EQUAL, user.getEmail()));</span>
-<span class="nc" id="L99">			PreparedQuery pq = datastore.prepare(q);</span>
-
+<span class="nc" id="L107">			PreparedQuery pqIndex = datastore.prepare(qIndex);</span>
+			
+<span class="nc" id="L109">			FetchOptions fetchOptions = FetchOptions.Builder.withLimit(2);</span>
+			
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if (cursorString != null) {</span>
+<span class="nc" id="L112">				fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));</span>
+			}
+			
+<span class="nc" id="L115">			QueryResultList&lt;Entity&gt; resultIndex = pqIndex.asQueryResultList(fetchOptions);</span>
 			
 			
-<span class="nc" id="L103">			FetchOptions fetchOptions = FetchOptions.Builder.withLimit(2);</span>
-
-<span class="nc bnc" id="L105" title="All 2 branches missed.">			if (cursorString != null) {</span>
-<span class="nc" id="L106">				fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));</span>
+<span class="nc" id="L118">			ArrayList&lt;Key&gt; keys = new ArrayList&lt;Key&gt;();</span>
+			
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			for(Entity entity : resultIndex) {</span>
+<span class="nc" id="L121">				keys.add(entity.getParent());</span>
+			}
+			
+<span class="nc" id="L124">			Map&lt;Key, Entity&gt; msgs = datastore.get(keys);</span>
+			
+<span class="nc" id="L126">			Collection&lt;Entity&gt; coll = new LinkedList&lt;Entity&gt;();</span>
+			
+<span class="nc bnc" id="L128" title="All 2 branches missed.">			for(Entity e : msgs.values()) {</span>
+<span class="nc" id="L129">				coll.add(e);</span>
 			}
 
-<span class="nc" id="L109">			QueryResultList&lt;Entity&gt; results = pq.asQueryResultList(fetchOptions);</span>
-<span class="nc" id="L110">			cursorString = results.getCursor().toWebSafeString();</span>
+			
+<span class="nc" id="L133">			cursorString = resultIndex.getCursor().toWebSafeString();</span>
 
-<span class="nc" id="L112">			return CollectionResponse.&lt;Entity&gt;builder().setItems(results).setNextPageToken(cursorString).build();</span>
+<span class="nc" id="L135">			return CollectionResponse.&lt;Entity&gt;builder().setItems(coll).setNextPageToken(cursorString).build();</span>
 		}
 	
 	
 	//TODO
 	@ApiMethod(name=&quot;follow&quot;, httpMethod=HttpMethod.POST)
 	public Entity follow(User user, @Named(&quot;email&quot;) String profileEmail) throws UnauthorizedException {
-<span class="nc bnc" id="L119" title="All 2 branches missed.">		if(user==null)</span>
-<span class="nc" id="L120">			throw new UnauthorizedException(&quot;invalid credentials&quot;);</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">		if(user==null)</span>
+<span class="nc" id="L143">			throw new UnauthorizedException(&quot;invalid credentials&quot;);</span>
 		
-<span class="nc" id="L122">		Entity e = new Entity(&quot;Follow&quot;,&quot;&quot;+user.getEmail()+profileEmail);</span>
-<span class="nc" id="L123">		e.setProperty(&quot;follower&quot;, user.getEmail());</span>
-<span class="nc" id="L124">		e.setProperty(&quot;profile&quot;, profileEmail);</span>
+<span class="nc" id="L145">		Entity e = new Entity(&quot;Follow&quot;,&quot;&quot;+user.getEmail()+profileEmail);</span>
+<span class="nc" id="L146">		e.setProperty(&quot;follower&quot;, user.getEmail());</span>
+<span class="nc" id="L147">		e.setProperty(&quot;profile&quot;, profileEmail);</span>
 		
-<span class="nc" id="L126">		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
-<span class="nc" id="L127">		Transaction txn = datastore.beginTransaction();</span>
-<span class="nc" id="L128">		datastore.put(e);</span>
-<span class="nc" id="L129">		txn.commit();</span>
-<span class="nc" id="L130">		return e;</span>
+<span class="nc" id="L149">		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();</span>
+<span class="nc" id="L150">		Transaction txn = datastore.beginTransaction();</span>
+<span class="nc" id="L151">		datastore.put(e);</span>
+<span class="nc" id="L152">		txn.commit();</span>
+<span class="nc" id="L153">		return e;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>
