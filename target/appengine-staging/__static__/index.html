@@ -38,7 +38,7 @@ var Profile={
 	  m("img",{"src":Profile.url}),
 	  m("button",{class:"button", onclick: function(e) { Profile.loadList()}},"Msgs"),
 	  m("button",{class:"button", onclick: function(e) { Profile.postMessage()}},"Post Dummy"),
-	  m("input[type=text]", {class:"input", value: Profile.toFollow, oninput: function(e) { Profile.toFollow = e.target.value; console.log("New value : "+Profile.toFollow); }} ),
+	  m("input[type=text]", {class:"input","placeholder":"example@gmail.com", value: Profile.toFollow, oninput: function(e) { Profile.toFollow = e.target.value; console.log("New value : "+Profile.toFollow); }} ),
 	  m("button", {class:"button", onclick: function(e) {Profile.follow(); console.log("follow")}}, "Follow !"),
 	  m("div",m(PostView,{profile: Profile}))
 	])

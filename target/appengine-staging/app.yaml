@@ -4,6 +4,8 @@ inbound_services:
 derived_file_type:
 - java_precompiled
 auto_id_policy: default
+beta_settings:
+  'source_reference': 'https://github.com/CozyDino/WebAndCloudM1.git#f300f8420b40801420f939b3102b05c1d09c361b'
 env_variables:
   'ENDPOINTS_SERVICE_NAME': 'tinyinsta-290312.appspot.com'
 api_version: 'user_defined'

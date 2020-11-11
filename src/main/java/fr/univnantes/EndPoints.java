@@ -89,14 +89,102 @@ public class EndPoints {
 		return e;
 	}
 	
+	//Permet de poster plusieurs fois un message pour tester la scalabilité lorsqu'on va récupérer les posts
+	public Entity postMsgTest(User user, PostMessage pm, @Nullable @Named("nbItems") String nbItems) throws UnauthorizedException {
+
+		if (user == null) {
+			throw new UnauthorizedException("Invalid credentials");
+		}
+		
+		int iteration = 1;
+		
+		if(nbItems != null)
+			iteration = Integer.parseInt(nbItems);
+		
+		
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		
+		
+		Query qFollowers = new Query("Follow"). //TODO recupérer les receivers en piochant dans la table des follows
+	    setFilter(new FilterPredicate("profile", FilterOperator.EQUAL, user.getEmail()));
+		PreparedQuery pq = datastore.prepare(qFollowers);
+		QueryResultIterable<Entity> results = pq.asQueryResultIterable();
+
+		
+
+//		Solution pour pas projeter les listes
+		
+		
+		//on supprime tout les posts
+		Query qPost = new Query("Post").setKeysOnly();
+		
+		PreparedQuery pqPost = datastore.prepare(qPost);
+		
+		QueryResultList<Entity> list = pqPost.asQueryResultList(FetchOptions.Builder.withDefaults());
+		
+		Query qPostIndex = new Query("PostIndex").setKeysOnly();
+		
+		PreparedQuery pqPostIndex = datastore.prepare(qPost);
+		
+		QueryResultList<Entity> listIndex = pqPost.asQueryResultList(FetchOptions.Builder.withDefaults());
+		
+		Transaction txn = datastore.beginTransaction();
+		
+		//On supprime tout les posts précédents
+		for(Entity post : list) {
+			datastore.delete(post.getKey());
+		}
+		
+		for(Entity postIndex : listIndex) {
+			datastore.delete(postIndex.getKey());
+		}
+		
+		
+		for(int i = 0 ; i < iteration; i++) {	
+			Entity e = new Entity("Post", Long.MAX_VALUE-(new Date()).getTime()+":"+user.getEmail());
+			e.setProperty("owner", user.getEmail());
+			e.setProperty("url", pm.url+i);
+			e.setProperty("body", pm.body);
+			e.setProperty("likec", 0);
+			e.setProperty("date", new Date());
+			
+			Entity pi = new Entity("PostIndex", e.getKey());
+			HashSet<String> rec=new HashSet<String>();
+			
+			
+			//On ajoute tout les followers dans la liste de réception
+			for(Entity entry : results) {
+				rec.add(entry.getProperty("follower").toString());
+			}
+			
+			pi.setProperty("receivers",rec);
+			
+			
+			datastore.put(e);
+			datastore.put(pi);
+		}
+		txn.commit();
+		return null;
+	}
+	
 	//TODO récuperer liste de message pour l'utilisateur et pour ses amis, via receiver list ?
 	@ApiMethod(name = "getPost",
 			   httpMethod = ApiMethod.HttpMethod.GET)
-		public CollectionResponse<Entity> getPost(User user, @Nullable @Named("next") String cursorString)
+		public CollectionResponse<Entity> getPost(User user, @Nullable @Named("next") String cursorString, @Nullable @Named("nbItems") String nbItems)
 				throws UnauthorizedException {
 
+			int nombrePost = 2;
+		
 			if (user == null) {
 				throw new UnauthorizedException("Invalid credentials");
+			}
+			
+			if (nbItems != null) {
+				try {					
+					nombrePost = Integer.parseInt(nbItems);
+				} catch (NumberFormatException e) {
+					nombrePost = 2;
+				}
 			}
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -106,7 +194,7 @@ public class EndPoints {
 			
 			PreparedQuery pqIndex = datastore.prepare(qIndex);
 			
-			FetchOptions fetchOptions = FetchOptions.Builder.withLimit(2);
+			FetchOptions fetchOptions = FetchOptions.Builder.withLimit(nombrePost);
 			
 			if (cursorString != null) {
 				fetchOptions.startCursor(Cursor.fromWebSafeString(cursorString));
@@ -114,7 +202,7 @@ public class EndPoints {
 			
 			QueryResultList<Entity> resultIndex = pqIndex.asQueryResultList(fetchOptions);
 			
-			
+		
 			ArrayList<Key> keys = new ArrayList<Key>();
 			
 			for(Entity entity : resultIndex) {
@@ -152,4 +240,38 @@ public class EndPoints {
 		txn.commit();
 		return e;
 	}
+	
+	@ApiMethod(name="followTest", httpMethod=HttpMethod.POST)
+	public Entity followTest(User user, @Named("numberFriend") String numberFriend) throws UnauthorizedException {
+		if(user==null)
+			throw new UnauthorizedException("invalid credentials");
+		
+		
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		Query qFriend = new Query("Follow").setKeysOnly();
+		
+		PreparedQuery pq = datastore.prepare(qFriend);
+		
+		QueryResultList<Entity> list = pq.asQueryResultList(FetchOptions.Builder.withDefaults());
+		
+		Transaction txn = datastore.beginTransaction();
+		
+		for(Entity e : list) {
+			datastore.delete(e.getKey());
+		
+		}
+		
+		for(int i = 0; i < Integer.parseInt(numberFriend); i++) {
+			Entity e = new Entity("Follow",""+"test"+i+"@gmail.com"+user.getEmail());
+			e.setProperty("profile", user.getEmail());
+			e.setProperty("follower", "test"+i+"@gmail.com");
+			datastore.put(e);
+		}
+		
+		txn.commit();
+		
+		return null;
+	}
+	
+	
 }
